@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<!--
+    @author kingfo <oicuicu@gmail.com>
+-->
+<project name="markdown-project-build" default="build" basedir="." xmlns:ac="antlib:net.sf.antcontrib">
+    <description>Markdown Project Build File</description>
+
+    <dirname property="current.dir" file="${ant.file.markdown-project-build}"/>
+    
+    <property name="root.dir" location="${current.dir}/../"/>
+    <property name="build.dir" location="${root.dir}/build/"/>
+    <property name="src.dir" location="${root.dir}/src/"/>
+    <property name="markdown.config.dir" location="${current.dir}/markdown/"/>
+    
+    <property name="markdown.files" value="*.md, *.mdown, *.markdown"/>
+    <property name="markdown.extension" value="\.md|\.mdown|\.markdown"/>
+    
+    <property name="charset" value="utf-8"/>
+    <property name="version" value="0.0.1"/>
+    
+    
+    
+    <target name="prepare">
+        <delete dir="${build.dir}"/>
+        <mkdir dir="${build.dir}"/>
+        <copy todir="${build.dir}">
+            <fileset dir="${src.dir}"/>
+        </copy>
+        <replaceregexp match="%VERSION%"
+                       replace="${version}"
+                       flags="g"
+                       encoding="${charset}">
+          <fileset dir="${build.dir}" includes="**/${markdown.files}"/>
+        </replaceregexp>
+        <replaceregexp match="${markdown.extension}"
+                       replace=".html"
+                       flags="g"
+                       encoding="${charset}">
+          <fileset dir="${build.dir}" includes="**/${markdown.files}"/>
+        </replaceregexp>
+    </target>
+    
+    <target name="compile">
+        <ac:for param="file">
+             <ac:path>
+                <fileset dir="${build.dir}" includes="**/${markdown.files}"/>
+             </ac:path>
+             <ac:sequential>
+                <ac:propertyregex override="yes"
+                  property="tmp"  input="@{file}"
+                  regexp="(.*\\)(?=.*(\.\w*)$|(\w+)$)" replace=""/>
+                <ac:propertyregex override="yes"
+                  property="filename"  input="${tmp}"
+                  regexp="${markdown.extension}" replace=""/>
+                <ac:propertyregex override="yes"
+                  property="filedir"  input="@{file}"
+                  regexp="(\w|[-.])+$" replace=""/>
+                               
+                <apply executable="pandoc" verbose="true" dir="${filedir}">
+                      <arg value="--standalone"/>
+                      <arg value="--smart"/>
+                      <arg value="--from"/>
+                      <arg value="markdown"/>
+                      <arg value="--to"/>
+                      <arg value="html"/>
+                      <arg value="--include-in-header"/>
+                      <arg value="${markdown.config.dir}/markdown.css.html"/>
+                      <arg value="--output"/>
+                      <arg value="${filename}.html"/>
+                      <fileset dir="${filedir}" includes="${markdown.files}"/>
+                </apply>
+             </ac:sequential>
+        </ac:for>
+    </target>
+     
+    <target name="clean">
+        <delete includeemptydirs="true">
+            <fileset dir="${build.dir}" includes="**/${markdown.files}"/>
+        </delete>
+    </target>
+    
+    <target name="build"
+          depends="prepare,compile,clean">
+    </target>
+    
+</project>
